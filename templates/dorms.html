@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Dorms</h1>
+  <ul class="list-group">
+    {% for dorm in dorms %}
+      <li class="list-group-item"><a href="dorm/{{dorm.id}}">{{dorm.dormname}}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}

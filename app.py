@@ -1,4 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
+from wtforms import Form, StringField, TextAreaField, PasswordField, validators
+from passlib.hash import sha256_crypt
+import psycopg2 as dbapi2
+import psycopg2.extras as dbapi2extras
+from functools import wraps
 
 
 app = Flask(__name__)
@@ -20,6 +25,26 @@ def home_page():
 def contact_us_page():
     return render_template('contact-us.html')
 
+@app.route('/dorms')
+def articles():
+    # Create cursor
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM BUILDING")
+        dorms = cur.fetchall()
+        return render_template('dorms.html', dorms=dorms)
+        # Close connection
+        cur.close()
+
+@app.route('/dorm/<string:building_id>/')
+def dorm(building_id):
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE id = %s", [building_id])
+        dorm = cur.fetchone()
+        return render_template('dorm.html', dorm=dorm)
+        # Close connection
+        cur.close()
 
 if __name__ == "__main__":
     app.run()

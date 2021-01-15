@@ -22,7 +22,7 @@ INIT_STATEMENTS = [
     supervisorid INTEGER REFERENCES SUPERVISOR(id),
     dormname VARCHAR(255) NOT NULL,
     dormdescription VARCHAR(255),
-    picture BYTEA
+    picture VARCHAR(255)
     )""",
 
     """CREATE TABLE IF NOT EXISTS ROOM (
@@ -31,7 +31,7 @@ INIT_STATEMENTS = [
     capacity INTEGER NOT NULL,
     allotment INTEGER DEFAULT 0,
     roomdescription VARCHAR(255),
-    picture BYTEA
+    picture VARCHAR(255)
     )""",
 
     """CREATE TABLE IF NOT EXISTS STUDENT (

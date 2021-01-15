@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>{{dorm.dormname}}</h1>
+  <hr>
+  <div>
+    {{dorm.dormdescription | safe}}
+  </div>
+{% endblock %}
