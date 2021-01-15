@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <div class="jumbotron text-center">
+    <h1>Welcome To ITU Dormitories</h1>
+    <p class="lead">This website is created to ease the communication between ITU students and the dorm administration.</p>
+    {% if session.logged_in == NULL %}
+      <a href="/register-student" class="btn btn-success btn-lg">Register as Student</a>
+      <a href="/register-supervisor" class="btn btn-success btn-lg">Register as Supervisor</a>
+
+      <a href="/login" class="btn btn-primary btn-lg">Login</a>
+    {% endif %}
+  </div>
+{% endblock %}

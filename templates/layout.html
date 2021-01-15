@@ -1,33 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>{% block title %}{% endblock %}</title>
+<html>
+  <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" type="text/css" href="../static/style.css">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
-</head>
-<body>
-    <!--navbar-->
-    <header class="header">
-        <div class="container">
-        <img src="../static/itu-logo.png" alt="my logo" height="60" class="logo">
-        <nav class="navbar">
-            <ul>
-                <li><a href="/">Home Page</a></li>			        
-                <li><a href="static/the-sun.html">The Sun</a></li>
-                <li><a href="static/inner-planets.html">Inner Planets</a></li>
-                <li><a href="static/gas-giants.html">Gas Giants</a></li>
-                <li><a href="static/other.html">Other Objects</a></li>
-                <li><a href="static/sources.html">Sources</a></li>
-                <li><a href="/Comments">Comments</a></li>
-            </ul>
-        </nav>
-        </div>
-    </header>
-    <!--navbar ends-->
-    <!--information-->
-    <div class="container content-margin">
-        {% block content %}{% endblock %}          
+    <title>ITU Dorms</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  </head>
+  <body>
+    {% include 'includes/_navbar.html' %}
+    <div class="container">
+      {% include 'includes/_messages.html' %}
+      {% block body %}{% endblock %}
     </div>
-</body>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdn.ckeditor.com/4.6.2/basic/ckeditor.js"></script>
+    <script type="text/javascript">
+      CKEDITOR.replace('editor')
+    </script>
+  </body>
 </html>
