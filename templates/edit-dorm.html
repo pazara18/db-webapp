@@ -1,0 +1,11 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <div class="jumbotron text-center">
+    <h1>Click Correct Button to Proceed</h1>
+        <a href="/add-room" class="btn btn-danger btn-lg">Add Rooms to the Dorm</a>
+        <a href="/remove-room" class="btn btn-warning btn-lg">Remove Rooms from the Dorm</a>
+        <a href="/edit-room" class="btn btn-success btn-lg">Edit Room</a>
+        <a href="/edit-dorm-descr" class="btn btn-primary btn-lg">Edit Dorm</a>
+  </div>
+{% endblock %}

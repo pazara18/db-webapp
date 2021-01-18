@@ -18,7 +18,7 @@ INIT_STATEMENTS = [
 
     """CREATE TABLE IF NOT EXISTS BUILDING (
     id SERIAL PRIMARY KEY,
-    supervisorid INTEGER REFERENCES SUPERVISOR(id),
+    supervisorid INTEGER REFERENCES SUPERVISOR(id) ON DELETE SET NULL,
     dormname VARCHAR(255) NOT NULL,
     dormdescription VARCHAR(255),
     picture VARCHAR(255)
@@ -36,7 +36,7 @@ INIT_STATEMENTS = [
 
     """CREATE TABLE IF NOT EXISTS STUDENT (
     id SERIAL PRIMARY KEY,
-    roomno INTEGER REFERENCES ROOM(id),
+    roomno INTEGER REFERENCES ROOM(id) ON DELETE SET NULL,
     firstname VARCHAR(30) NOT NULL,
     surname VARCHAR(30) NOT NULL,
     date_of_birth DATE NOT NULL,
@@ -50,7 +50,7 @@ INIT_STATEMENTS = [
     studentid INTEGER NOT NULL REFERENCES STUDENT(id) ON DELETE CASCADE,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (studentid, payment_date),
-    roomno INTEGER NOT NULL REFERENCES room(id),
+    roomno INTEGER NOT NULL REFERENCES room(id) ON DELETE CASCADE,
     receipt_file BYTEA,
     is_approved BOOLEAN DEFAULT 'false'
     )""",
@@ -72,7 +72,7 @@ INIT_STATEMENTS = [
     )""",
 
     """INSERT INTO dormadmin(email, pword) VALUES
-    ('ituyurtlariyonetici@itu.edu.tr', '$5$rounds=535000$UCLssf.SeAuyWazK$q7qXhMWVFRmmdDby3LurJFllPOMqv6ERkNC.Agfl3e.')""",
+    ('ituyurtlariyonetici@itu.edu.tr', '$5$rounds=535000$UCLssf.SeAuyWazK$q7qXhMWVFRmmdDby3LurJFllPOMqv6ERkNC.Agfl3e.')"""
 ]
 
 
