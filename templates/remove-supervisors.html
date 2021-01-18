@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Supervisors</h1>
+  <form action="" method="POST">
+  <ul class="form-check">
+    {% for supervisor in supervisors %}
+      <input type="checkbox" id="{{supervisor.id}}" name="supervisor-checkbox" value="{{supervisor.id}}">
+      <a href="supervisor-profile/{{supervisor.id}}">{{supervisor.firstname}} {{supervisor.surname}}</a> </br>
+      {% endfor %}
+    </br>
+    </br>
+    </br>
+  </ul>
+  <button type="submit" class="btn btn-primary">Remove Selected From Database</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>{{student.firstname}} {{student.surname}}'s Profile</h1>
+  <hr>
+  <div>
+    Email: {{student.email | safe}} </br>
+    Phone Number: {{student.phonenum | safe}} </br>
+    Date Of Birth: {{student.date_of_birth}}  </br>
+    Date Of Enterance: {{student.date_of_entrance}}  </br>
+  </div>
+{% endblock %}

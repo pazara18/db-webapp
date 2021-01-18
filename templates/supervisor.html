@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>{{supervisor.firstname}} {{supervisor.surname}}'s Profile</h1>
+  <hr>
+  <div>
+    Email: {{supervisor.email | safe}} </br>
+    Phone Number: {{supervisor.phonenum | safe}}
+  </div>
+{% endblock %}

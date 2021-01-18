@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Dorms</h1>
+  <form action="" method="POST">
+  <ul class="form-check">
+    {% for dorm in dorms %}
+      <input type="checkbox" id="{{dorm.id}}" name="dorm-checkbox" value="{{dorm.id}}">
+      <a href="dorm/{{dorm.id}}">{{dorm.dormname}}</a> </br>
+      {% endfor %}
+    </br>
+    </br>
+    </br>
+  </ul>
+  <button type="submit" class="btn btn-primary">Remove Selected From Database</button>
+  </form>
+{% endblock %}

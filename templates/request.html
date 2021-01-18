@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Request #{{request.request_id}}</h1>
+  <form action="" method="POST">
+  <ul class="form-check">
+    <p>Request of {{student.firstname}} {{student.surname}}:</p>
+    <p>I want to move to {{room.roomname}}.</p>
+  </ul>
+  <button type="submit" class="btn btn-primary">Approve Request</button>
+  <button type="submit" class="btn btn-primary">Reject Request</button>
+  </form>
+{% endblock %}

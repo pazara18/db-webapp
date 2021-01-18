@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Requests</h1>
+  <ul class="list-group">
+    {% for request in requests %}
+      <li class="list-group-item"><a href="request/{{request.request_id}}">Request #{{request.request_id}}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}

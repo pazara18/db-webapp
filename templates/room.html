@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>{{room.roomname}}</h1>
+  <hr>
+  <div>
+    {{room.roomdescription | safe}}
+  </div>
+{% endblock %}

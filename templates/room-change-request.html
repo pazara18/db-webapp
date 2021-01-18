@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Rooms</h1>
+  <form action="" method="POST">
+  <ul class="form-check">
+    {% for room in rooms %}
+      <input type="radio" id="{{room.id}}" name="room-radio" value="{{room.id}}">
+      <a href="dorm/{{room.id}}">{{room.roomname}}</a> </br>
+      {% endfor %}
+    </br>
+    </br>
+    </br>
+  </ul>
+  <button type="submit" class="btn btn-primary">Join Selected Room</button>
+  </form>
+{% endblock %}
