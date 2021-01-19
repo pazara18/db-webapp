@@ -4,9 +4,14 @@
   <h1>{{room.roomname}}</h1>
   <hr>
   <div>
+    {% if room.picture %}
+      <img src="/static/uploads/{{room.picture}}" alt="{{room.roomname}}" width="500">
+    {% endif %}
+    </br></br>
     <p>{{room.roomdescription | safe}}</p> </br></br>
     Capacity: {{room.capacity | safe}} </br></br>
-    Current Number of Students: {{room.allotment | safe}}
+    Current Number of Students: {{room.allotment | safe}} </br></br>
+    Price of the Room for 1 Student: {{room.price | safe}} TL
     <h2>Current Occupants</h2>
     {% if session.logged_in %}
       {% for student in students %}

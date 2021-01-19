@@ -1,5 +1,6 @@
 import psycopg2 as dbapi2
-import app
+import os
+
 INIT_STATEMENTS = [
     """CREATE TABLE IF NOT EXISTS DORMADMIN (
     id SERIAL PRIMARY KEY,
@@ -9,9 +10,9 @@ INIT_STATEMENTS = [
 
     """CREATE TABLE IF NOT EXISTS SUPERVISOR (
     id SERIAL PRIMARY KEY,
-    firstname VARCHAR(30) NOT NULL,
-    surname VARCHAR(30) NOT NULL,
-    email VARCHAR(40) UNIQUE NOT NULL,
+    firstname VARCHAR(50) NOT NULL,
+    surname VARCHAR(50) NOT NULL,
+    email VARCHAR(50) UNIQUE NOT NULL,
     pword TEXT NOT NULL,
     phonenum VARCHAR(20) UNIQUE
     )""",
@@ -20,8 +21,8 @@ INIT_STATEMENTS = [
     id SERIAL PRIMARY KEY,
     supervisorid INTEGER REFERENCES SUPERVISOR(id) ON DELETE SET NULL,
     dormname VARCHAR(255) NOT NULL,
-    dormdescription VARCHAR(255),
-    picture VARCHAR(255)
+    dormdescription VARCHAR(4095),
+    picture text
     )""",
 
     """CREATE TABLE IF NOT EXISTS ROOM (
@@ -30,28 +31,29 @@ INIT_STATEMENTS = [
     roomname VARCHAR(255) NOT NULL,
     capacity INTEGER NOT NULL,
     allotment INTEGER DEFAULT 0,
-    roomdescription VARCHAR(255),
-    picture VARCHAR(255)
+    roomdescription VARCHAR(4095),
+    price INTEGER NOT NULL,
+    picture text
     )""",
 
     """CREATE TABLE IF NOT EXISTS STUDENT (
     id SERIAL PRIMARY KEY,
     roomno INTEGER REFERENCES ROOM(id) ON DELETE SET NULL,
-    firstname VARCHAR(30) NOT NULL,
-    surname VARCHAR(30) NOT NULL,
+    firstname VARCHAR(50) NOT NULL,
+    surname VARCHAR(50) NOT NULL,
     date_of_birth DATE NOT NULL,
     date_of_entrance DATE DEFAULT CURRENT_DATE,
-    phonenum VARCHAR(20),
-    email VARCHAR(40) UNIQUE NOT NULL,
+    phonenum VARCHAR(50) UNIQUE,
+    email VARCHAR(50) UNIQUE NOT NULL,
     pword TEXT NOT NULL
     )""",
 
     """CREATE TABLE IF NOT EXISTS PAYMENT (
     studentid INTEGER NOT NULL REFERENCES STUDENT(id) ON DELETE CASCADE,
-    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payment_date DATE DEFAULT CURRENT_DATE,
     PRIMARY KEY (studentid, payment_date),
     roomno INTEGER NOT NULL REFERENCES room(id) ON DELETE CASCADE,
-    receipt_file BYTEA,
+    receipt_file text,
     is_approved BOOLEAN DEFAULT 'false'
     )""",
 
@@ -59,8 +61,8 @@ INIT_STATEMENTS = [
     id SERIAL PRIMARY KEY,
     studentid INTEGER NOT NULL REFERENCES STUDENT(id) ON DELETE CASCADE,
     buildingid INTEGER NOT NULL REFERENCES BUILDING(id) ON DELETE CASCADE,
-    complaint VARCHAR(255),
-    response VARCHAR(255),
+    complaint VARCHAR(4095),
+    response VARCHAR(4095),
     is_responded BOOLEAN DEFAULT 'false'
     )""",
 
@@ -86,8 +88,6 @@ def initialize(url):
 
 
 if __name__ == "__main__":
-    if app.ENV == 'DEV':
-        url = "postgres://postgres:admin@localhost:5432/dorms"
-    else:
-        url ='postgres://tbplxswrvmlgow:992daea8a1c83983c8259008549cfbf384d58cecea2f13efc68ff4334261061f@ec2-34-192-72-159.compute-1.amazonaws.com:5432/ddtd1uh2u2t31p'
+    url = 'postgres://postgres:admin@localhost:5432/dorms'
+    # url = os.getenv("DATABASE_URL")
     initialize(url)

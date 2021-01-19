@@ -1,116 +1,26 @@
 from flask import Flask, render_template, flash, redirect, url_for, session, request
 from wtforms import Form, StringField, TextAreaField, IntegerField, PasswordField, SelectField, DateTimeField, \
     validators
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from passlib.hash import sha256_crypt
 import psycopg2 as dbapi2
 import psycopg2.extras as dbapi2extras
 from functools import wraps
+from werkzeug.utils import secure_filename
 import ast
-
-app = Flask(__name__)
-app.secret_key = 'secret123'
+from uuid import uuid4
+import os
 
 ENV = 'PROD'
 
-if ENV == 'DEV':
-    app.debug = True
-    DATABASE_URI = 'postgres://postgres:admin@localhost:5432/dorms'
-else:
-    app.debug = False
-    DATABASE_URI = 'postgres://tbplxswrvmlgow:992daea8a1c83983c8259008549cfbf384d58cecea2f13efc68ff4334261061f@ec2-34-192-72-159.compute-1.amazonaws.com:5432/ddtd1uh2u2t31p'
-
-
-# works
-def parse_tuple(string):
-    s = ast.literal_eval(str(string))
-    if type(s) == tuple:
-        return s
-
-# works
-def get_dorm_list():
-    with dbapi2.connect(DATABASE_URI) as connection:
-        cur = connection.cursor()
-        cur.execute("SELECT (id,dormname) FROM building WHERE supervisorid IS NULL")
-        dorms = cur.fetchall()
-        cur.close()
-
-    dorm_list = []
-
-    for i in range(0, len(dorms)):
-        d_tuple = parse_tuple(dorms[i][0])
-        dorm_list.append(d_tuple)
-
-    return dorm_list
-
-
-# works
-def get_room_list():
-    with dbapi2.connect(DATABASE_URI) as connection:
-        cur = connection.cursor()
-        cur.execute("SELECT (id,roomname) FROM room WHERE capacity > allotment")
-        rooms = cur.fetchall()
-        cur.close()
-
-    room_list = []
-
-    for i in range(0, len(rooms)):
-        r_tuple = parse_tuple(rooms[i][0])
-        room_list.append(r_tuple)
-
-    return room_list
-
-
-# works
-@app.route("/")
-def home_page():
-    return render_template('home.html')
-
-
-# works
-@app.route("/contact-us")
-def contact_us_page():
-    return render_template('contact-us.html')
-
-
-# works
-@app.route('/dorms')
-def dorms():
-    # Create cursor
-    with dbapi2.connect(DATABASE_URI) as connection:
-        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-        cur.execute("SELECT * FROM BUILDING")
-        dorms = cur.fetchall()
-        cur.close()
-    return render_template('dorms.html', dorms=dorms)
-
-
-# works
-@app.route('/dorm/<string:building_id>/')
-def dorm(building_id):
-    with dbapi2.connect(DATABASE_URI) as connection:
-        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-        cur.execute("SELECT * FROM building WHERE id = %s", [building_id])
-        dorm = cur.fetchone()
-        cur.execute("SELECT * FROM room WHERE buildingid = %s", [building_id])
-        rooms = cur.fetchall()
-        cur.execute("SELECT * FROM supervisor WHERE id = %s", [dorm['supervisorid']])
-        supervisor = cur.fetchone()
-        cur.close()
-    print(type(supervisor))
-    return render_template('dorm.html', dorm=dorm, supervisor=supervisor, rooms=rooms)
-
-
-# works
-@app.route('/room/<string:room_id>/')
-def room(room_id):
-    with dbapi2.connect(DATABASE_URI) as connection:
-        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-        cur.execute("SELECT * FROM room WHERE id = %s", [room_id])
-        room = cur.fetchone()
-        cur.execute("SELECT * FROM student WHERE roomno = %s", [room_id])
-        students = cur.fetchall()
-        cur.close()
-    return render_template('room.html', room=room, students=students)
+app = Flask(__name__)
+app.secret_key = 'secret123'
+UPLOAD_PATH = "static/uploads/"
+app.config['UPLOAD_FOLDER'] = UPLOAD_PATH
+DORM_FOLDER = app.config['UPLOAD_FOLDER'] + 'img/dorm/'
+ROOM_FOLDER = app.config['UPLOAD_FOLDER'] + 'img/room/'
+RECEIPT_FOLDER = app.config['UPLOAD_FOLDER'] + 'docs/'
 
 
 # works
@@ -149,9 +59,10 @@ class RegisterSupervisorForm(Form):
 
 
 # works
-class AddDormForm(Form):
+class AddDormForm(FlaskForm):
     dormname = StringField('Name of the Building', [validators.Length(min=1, max=50)])
-    dormdescription = TextAreaField('Description for building', [validators.Length(min=30, max=250)])
+    dormdescription = TextAreaField('Description for building', [validators.Length(min=20, max=1500)])
+    picture = FileField('Add picture', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
     room1_count = IntegerField('Number of 1-person Rooms', [validators.NumberRange(min=0, max=10)])
     room2_count = IntegerField('Number of 2-person Rooms', [validators.NumberRange(min=0, max=10)])
     room3_count = IntegerField('Number of 3-person Rooms', [validators.NumberRange(min=0, max=10)])
@@ -159,39 +70,146 @@ class AddDormForm(Form):
     room5_count = IntegerField('Number of 5-person Rooms', [validators.NumberRange(min=0, max=10)])
 
 
-class EditDormForm(Form):
-    new_description = TextAreaField('New description for the dorm', [validators.Length(min=30, max=250)])
+# works
+class EditDormForm(FlaskForm):
+    new_description = TextAreaField('New description for the dorm', [validators.Length(min=20, max=1500)])
+    picture = FileField('New picture (optional)', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
 
 
 # works
-class AddRoomForm(Form):
+class AddRoomForm(FlaskForm):
     capacity = IntegerField('Room capacity', [validators.NumberRange(min=1, max=5)])
     name = StringField('Room name', [validators.Length(min=1, max=50)])
-    description = TextAreaField('Description for the room', [validators.Length(min=30, max=250)])
+    picture = FileField('Add picture', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
+    description = TextAreaField('Description for the room', [validators.Length(min=20, max=1500)])
+    price = IntegerField('Price of the room for 1 student', [validators.NumberRange(min=500)])
 
-
-class EditRoomForm(Form):
-    new_capacity = IntegerField('New room capacity', [validators.NumberRange(min=1, max=5)])
-    new_name = StringField('New room name', [validators.Length(min=1, max=50)])
-    new_description = TextAreaField('New description for the room', [validators.Length(min=30, max=250)])
-
-
-# class ReceiptForm(Form):
 
 # works
-class SearchStudentForm(Form):
+class EditRoomForm(FlaskForm):
+    new_capacity = IntegerField('New room capacity', [validators.NumberRange(min=1, max=5)])
+    new_name = StringField('New room name', [validators.Length(min=1, max=50)])
+    picture = FileField('New picture (optional)', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
+    new_description = TextAreaField('New description for the room', [validators.Length(min=20, max=1500)])
+    new_price = IntegerField('New price for 1 student', [validators.NumberRange(min=500)])
+
+
+class ReceiptForm(FlaskForm):
+    receipt = FileField('Upload Receipt (pdf)', validators=[FileAllowed(['pdf'], 'PDF Documents only!'), FileRequired()])
+
+# works
+class SearchStudentForm(FlaskForm):
     name = StringField('Name', [validators.Length(min=1, max=50)])
     surname = StringField('Surname', [validators.Length(min=1, max=50)])
 
 
 # works
-class FileComplaintForm(Form):
-    complaint = TextAreaField('Your Complaint', [validators.Length(min=30, max=250)])
+class FileComplaintForm(FlaskForm):
+    complaint = TextAreaField('Your Complaint', [validators.Length(min=20, max=1500)])
 
 
 # works
-class ReplyComplaintForm(Form):
-    reply = TextAreaField('Your Reply', [validators.Length(min=30, max=250)])
+class ReplyComplaintForm(FlaskForm):
+    reply = TextAreaField('Your Reply', [validators.Length(min=20, max=1500)])
+
+
+# works
+def parse_tuple(string):
+    s = ast.literal_eval(str(string))
+    if type(s) == tuple:
+        return s
+
+
+# works
+def get_dorm_list():
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor()
+        cur.execute("SELECT (id,dormname) FROM building WHERE supervisorid IS NULL ORDER BY id ASC")
+        dorms = cur.fetchall()
+        cur.close()
+
+    dorm_list = []
+
+    for i in range(0, len(dorms)):
+        d_tuple = parse_tuple(dorms[i][0])
+        dorm_list.append(d_tuple)
+
+    return dorm_list
+
+
+# works
+def get_room_list():
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor()
+        cur.execute("SELECT (id,roomname) FROM room WHERE capacity > allotment ORDER BY id ASC")
+        rooms = cur.fetchall()
+        cur.close()
+
+    room_list = []
+
+    for i in range(0, len(rooms)):
+        r_tuple = parse_tuple(rooms[i][0])
+        room_list.append(r_tuple)
+
+    return room_list
+
+
+# works
+def make_unique(string):
+    ident = uuid4().__str__()[:8]
+    return f"{ident}-{string}"
+
+
+# works
+@app.route("/")
+def home_page():
+    return render_template('home.html')
+
+
+# works
+@app.route("/contact-us")
+def contact_us_page():
+    return render_template('contact-us.html')
+
+
+# works
+@app.route('/dorms')
+def dorms():
+    # Create cursor
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM BUILDING ORDER BY id ASC")
+        dorms = cur.fetchall()
+        cur.close()
+    return render_template('dorms.html', dorms=dorms)
+
+
+# works
+@app.route('/dorm/<string:building_id>/')
+def dorm(building_id):
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE id = %s", [building_id])
+        dorm = cur.fetchone()
+        cur.execute("SELECT * FROM room WHERE buildingid = %s ORDER BY id ASC", [building_id])
+        rooms = cur.fetchall()
+        cur.execute("SELECT * FROM supervisor WHERE id = %s", [dorm['supervisorid']])
+        supervisor = cur.fetchone()
+        cur.close()
+    return render_template('dorm.html', dorm=dorm, supervisor=supervisor, rooms=rooms)
+
+
+# works
+@app.route('/room/<string:room_id>/')
+def room(room_id):
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM room WHERE id = %s", [room_id])
+        room = cur.fetchone()
+        cur.execute("SELECT * FROM student WHERE roomno = %s ORDER BY id ASC", [room_id])
+        students = cur.fetchall()
+        cur.close()
+    return render_template('room.html', room=room, students=students)
 
 
 # works
@@ -206,7 +224,7 @@ def register_student():
         phonenum = form.phonenum.data
         email = form.email.data
         roomid = form.room.data
-        password = sha256_crypt.encrypt(str(form.password.data))
+        password = sha256_crypt.hash(str(form.password.data))
         student_tuple = (roomid, name, surname, dateofbirth, phonenum, email, password)
 
         with dbapi2.connect(DATABASE_URI) as connection:
@@ -254,7 +272,7 @@ def register_supervisor():
         phonenum = form.phonenum.data
         email = form.email.data
         dormid = form.dorm.data
-        password = sha256_crypt.encrypt(str(form.password.data))
+        password = sha256_crypt.hash(str(form.password.data))
         supervisor_tuple = (name, surname, phonenum, email, password)
 
         with dbapi2.connect(DATABASE_URI) as connection:
@@ -374,6 +392,7 @@ def logout():
 
 
 # works
+
 # admin pages begin
 @app.route('/manage-buildings')
 @is_logged_in
@@ -392,8 +411,8 @@ def add_dorm():
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
         return redirect(url_for('home_page'))
-    form = AddDormForm(request.form)
-    if request.method == 'POST' and form.validate():
+    form = AddDormForm()
+    if form.validate_on_submit():
         name = form.dormname.data
         description = form.dormdescription.data
         room1_count = form.room1_count.data
@@ -401,12 +420,21 @@ def add_dorm():
         room3_count = form.room3_count.data
         room4_count = form.room4_count.data
         room5_count = form.room5_count.data
-
-        dorm_tuple = (name, description)
-        with dbapi2.connect(DATABASE_URI) as connection:
-            cur = connection.cursor()
-            cur.execute("INSERT INTO building(dormname,dormdescription) VALUES (%s,%s)", dorm_tuple)
-            cur.close()
+        f = form.picture
+        if f.data != None:
+            filename = make_unique(secure_filename(f.data.filename))
+            f.data.save(os.path.join(DORM_FOLDER, filename))
+            dorm_tuple = (name, description, filename)
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor()
+                cur.execute("INSERT INTO building(dormname,dormdescription,picture) VALUES (%s,%s,%s)", dorm_tuple)
+                cur.close()
+        else:
+            dorm_tuple = (name, description)
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor()
+                cur.execute("INSERT INTO building(dormname,dormdescription) VALUES (%s,%s)", dorm_tuple)
+                cur.close()
 
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
@@ -419,10 +447,12 @@ def add_dorm():
                 roomname = name + " 1-person room #" + str(i + 1)
                 roomdescription = roomname + " is a 1-person room in " + name
                 capacity = 1
-                room_tuple = (building['id'], roomname, capacity, roomdescription)
+                default_1_price = 1750
+                room_tuple = (building['id'], roomname, capacity, roomdescription, default_1_price)
                 cur = connection.cursor()
-                cur.execute("INSERT INTO room(buildingid,roomname,capacity,roomdescription) VALUES (%s,%s,%s,%s)",
-                            room_tuple)
+                cur.execute(
+                    "INSERT INTO room(buildingid,roomname,capacity,roomdescription, price) VALUES (%s,%s,%s,%s,%s)",
+                    room_tuple)
                 cur.close()
 
         for i in range(0, room2_count):
@@ -430,10 +460,12 @@ def add_dorm():
                 roomname = name + " 2-person room #" + str(i + 1)
                 roomdescription = roomname + " is a 2-person room in " + name
                 capacity = 2
-                room_tuple = (building['id'], roomname, capacity, roomdescription)
+                default_2_price = 1250
+                room_tuple = (building['id'], roomname, capacity, roomdescription, default_2_price)
                 cur = connection.cursor()
-                cur.execute("INSERT INTO room(buildingid,roomname,capacity,roomdescription) VALUES (%s,%s,%s,%s)",
-                            room_tuple)
+                cur.execute(
+                    "INSERT INTO room(buildingid,roomname,capacity,roomdescription, price) VALUES (%s,%s,%s,%s,%s)",
+                    room_tuple)
                 cur.close()
 
         for i in range(0, room3_count):
@@ -441,10 +473,12 @@ def add_dorm():
                 roomname = name + " 3-person room #" + str(i + 1)
                 roomdescription = roomname + " is a 3-person room in " + name
                 capacity = 3
-                room_tuple = (building['id'], roomname, capacity, roomdescription)
+                default_3_price = 1000
+                room_tuple = (building['id'], roomname, capacity, roomdescription, default_3_price)
                 cur = connection.cursor()
-                cur.execute("INSERT INTO room(buildingid,roomname,capacity,roomdescription) VALUES (%s,%s,%s,%s)",
-                            room_tuple)
+                cur.execute(
+                    "INSERT INTO room(buildingid,roomname,capacity,roomdescription, price) VALUES (%s,%s,%s,%s,%s)",
+                    room_tuple)
                 cur.close()
 
         for i in range(0, room4_count):
@@ -452,10 +486,12 @@ def add_dorm():
                 roomname = name + " 4-person room #" + str(i + 1)
                 roomdescription = roomname + " is a 4-person room in " + name
                 capacity = 4
-                room_tuple = (building['id'], roomname, capacity, roomdescription)
+                default_4_price = 750
+                room_tuple = (building['id'], roomname, capacity, roomdescription, default_4_price)
                 cur = connection.cursor()
-                cur.execute("INSERT INTO room(buildingid,roomname,capacity,roomdescription) VALUES (%s,%s,%s,%s)",
-                            room_tuple)
+                cur.execute(
+                    "INSERT INTO room(buildingid,roomname,capacity,roomdescription, price) VALUES (%s,%s,%s,%s,%s)",
+                    room_tuple)
                 cur.close()
 
         for i in range(0, room5_count):
@@ -463,10 +499,12 @@ def add_dorm():
                 roomname = name + " 5-person room #" + str(i + 1)
                 roomdescription = roomname + " is a 5-person room in " + name
                 capacity = 5
-                room_tuple = (building['id'], roomname, capacity, roomdescription)
+                default_5_price = 500
+                room_tuple = (building['id'], roomname, capacity, roomdescription, default_5_price)
                 cur = connection.cursor()
-                cur.execute("INSERT INTO room(buildingid,roomname,capacity,roomdescription) VALUES (%s,%s,%s,%s)",
-                            room_tuple)
+                cur.execute(
+                    "INSERT INTO room(buildingid,roomname,capacity,roomdescription, price) VALUES (%s,%s,%s,%s,%s)",
+                    room_tuple)
                 cur.close()
 
         flash('Building added', 'success')
@@ -485,7 +523,7 @@ def remove_dorm():
     dormlist = request.form.getlist('dorm-checkbox')
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-        cur.execute("SELECT * FROM BUILDING")
+        cur.execute("SELECT * FROM BUILDING ORDER BY id ASC")
         dorms = cur.fetchall()
         cur.close()
 
@@ -523,8 +561,9 @@ def delete_students():
                 cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
                 cur.execute("SELECT * FROM student WHERE id = %(id)s", {'id': int(student)})
                 student_row = cur.fetchone()
-                cur.execute("UPDATE ROOM SET allotment = allotment - 1 WHERE id = %(id)s",
-                            {'id': int(student_row['roomno'])})
+                if student_row['roomno']:
+                    cur.execute("UPDATE ROOM SET allotment = allotment - 1 WHERE id = %(id)s",
+                                {'id': int(student_row['roomno'])})
                 cur.execute("DELETE FROM student WHERE id = %(id)s", {'id': int(student)})
                 cur.close()
 
@@ -572,7 +611,7 @@ def process_requests():
         return redirect(url_for('home_page'))
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-        cur.execute("SELECT * FROM request WHERE is_responded = FALSE")
+        cur.execute("SELECT * FROM request")
         requests = cur.fetchall()
         cur.close()
     return render_template('process-requests.html', requests=requests)
@@ -632,6 +671,7 @@ def request_page(request_id):
 
 
 # works
+
 # supervisor pages begin
 @app.route('/search-students', methods=['GET', 'POST'])
 @is_logged_in
@@ -686,25 +726,44 @@ def add_room():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
         return redirect(url_for('home_page'))
-    form = AddRoomForm(request.form)
-    capacity = form.capacity.data
-    name = form.name.data
-    description = form.description.data
-    if request.method == 'POST' and form.validate():
-        with dbapi2.connect(DATABASE_URI) as connection:
-            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-            cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
-            building = cur.fetchone()
-            if not building:
-                flash('You cannot add rooms as you are not assigned to a building!', 'danger')
-                return redirect(url_for('home_page'))
-            room_tuple = (building['id'], name, capacity, description)
-            cur.execute("INSERT INTO room(buildingid, roomname, capacity, roomdescription) VALUES (%s,%s,%s,%s)", room_tuple)
-            cur.close()
+    form = AddRoomForm()
+    if form.validate_on_submit():
+        capacity = form.capacity.data
+        name = form.name.data
+        description = form.description.data
+        price = form.price.data
+        f = form.picture
 
+        if f.data != None:
+            filename = make_unique(secure_filename(f.data.filename))
+            f.data.save(os.path.join(ROOM_FOLDER, filename))
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+                building = cur.fetchone()
+                if not building:
+                    flash('You cannot add rooms as you are not assigned to a building!', 'danger')
+                    return redirect(url_for('home_page'))
+                room_tuple = (building['id'], name, capacity, description, price, filename)
+                cur.execute(
+                    "INSERT INTO room(buildingid, roomname, capacity, roomdescription, price, picture) VALUES (%s,%s,%s,%s,%s,%s)",
+                    room_tuple)
+                cur.close()
+        else:
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+                building = cur.fetchone()
+                if not building:
+                    flash('You cannot add rooms as you are not assigned to a building!', 'danger')
+                    return redirect(url_for('home_page'))
+                room_tuple = (building['id'], name, capacity, description, price)
+                cur.execute(
+                    "INSERT INTO room(buildingid, roomname, capacity, roomdescription, price) VALUES (%s,%s,%s,%s,%s)",
+                    room_tuple)
+                cur.close()
         flash('Room added', 'success')
         return redirect(url_for('home_page'))
-
 
     return render_template('add-room.html', form=form)
 
@@ -769,27 +828,38 @@ def edit_room_page(room_id):
         flash('Unauthorized, Please login as supervisor', 'danger')
         return redirect(url_for('home_page'))
 
-    form = EditRoomForm(request.form)
-    new_capacity = form.new_capacity.data
-    print(new_capacity)
-    new_name = form.new_name.data
-    new_description = form.new_description.data
+    form = EditRoomForm()
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM room WHERE room.id = %s", [room_id])
         room = cur.fetchone()
         cur.close()
 
-    if request.method == 'POST' and form.validate():
+    if form.validate_on_submit():
+        new_capacity = form.new_capacity.data
+        new_name = form.new_name.data
+        new_description = form.new_description.data
+        new_price = form.new_price.data
+        f = form.picture
         if new_capacity < int(room['allotment']):
             flash('New capacity cannot be lower than current occupant count!', 'danger')
             return redirect(url_for('home_page'))
-        with dbapi2.connect(DATABASE_URI) as connection:
-            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-            cur.execute("UPDATE room SET capacity = %s, roomname = %s, roomdescription = %s WHERE room.id = %s",
-                        [new_capacity, new_name, new_description, room_id])
-            cur.close()
-
+        if f.data != None:
+            filename = make_unique(secure_filename(f.data.filename))
+            f.data.save(os.path.join(ROOM_FOLDER, filename))
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute(
+                    "UPDATE room SET capacity = %s, roomname = %s, roomdescription = %s, price = %s, picture = %s WHERE room.id = %s",
+                    [new_capacity, new_name, new_description, new_price, filename, room_id])
+                cur.close()
+        else:
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute(
+                    "UPDATE room SET capacity = %s, roomname = %s, roomdescription = %s, price = %s WHERE room.id = %s",
+                    [new_capacity, new_name, new_description, new_price, room_id])
+                cur.close()
         flash('Room updated', 'success')
         return redirect(url_for('home_page'))
 
@@ -803,22 +873,33 @@ def edit_dorm_description():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
         return redirect(url_for('home_page'))
-    form = EditDormForm(request.form)
-    new_description = form.new_description.data
+    form = EditDormForm()
+
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
         building = cur.fetchone()
         cur.close()
-    if request.method == 'POST' and form.validate():
+    if form.validate_on_submit():
+        new_description = form.new_description.data
+        f = form.picture
         if not building:
             flash('You cannot edit as you are not assigned to a dorm currently!', 'danger')
             return redirect(url_for('home_page'))
-        with dbapi2.connect(DATABASE_URI) as connection:
-            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-            cur.execute("UPDATE building SET dormdescription = %s WHERE building.id = %s",
-                        [new_description, building['id']])
-            cur.close()
+        if f.data != None:
+            filename = make_unique(secure_filename(f.data.filename))
+            f.data.save(os.path.join(DORM_FOLDER, filename))
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute("UPDATE building SET dormdescription = %s, picture = %s WHERE building.id = %s",
+                            [new_description, filename, building['id']])
+                cur.close()
+        else:
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute("UPDATE building SET dormdescription = %s WHERE building.id = %s",
+                            [new_description, building['id']])
+                cur.close()
         flash('Description updated', 'success')
         return redirect(url_for('home_page'))
 
@@ -881,7 +962,7 @@ def complaint_page(complaint_id):
     return render_template('reply-complaint.html', form=form, complaint=complaint)
 
 
-# add edit functionality
+# add edit functionality to phonenum
 @app.route('/supervisor-profile/<string:supervisor_id>')
 @is_logged_in
 def supervisor_profile(supervisor_id):
@@ -895,17 +976,36 @@ def supervisor_profile(supervisor_id):
     return render_template('supervisor.html', supervisor=supervisor, dorm=dorm)
 
 
-# todo
 # student pages begin
-@app.route('/upload-receipt')
+
+# works
+@app.route('/upload-receipt', methods=['GET', 'POST'])
 @is_logged_in
 def upload_receipts_page():
     if session['usertype'] != 'student':
         flash('Unauthorized, Please login as admin', 'danger')
         return redirect(url_for('home_page'))
-    # have filebox that accepts pdf inputs
-    # create payment entity in database
-    return "TODO"
+    form = ReceiptForm()
+    f = form.receipt
+
+    if form.validate_on_submit():
+        filename = make_unique(secure_filename(f.data.filename))
+        f.data.save(os.path.join(RECEIPT_FOLDER, filename))
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("SELECT * FROM student WHERE id = %s", [session['id']])
+            student = cur.fetchone()
+            cur.close()
+        payment_tuple = (student['id'], student['roomno'], filename)
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor()
+            cur.execute("INSERT INTO payment (studentid,roomno, receipt_file) VALUES (%s,%s,%s)", payment_tuple)
+            cur.close()
+
+        flash('Receipt Uploaded', 'success')
+        return redirect(url_for('home_page'))
+
+    return render_template('upload-receipt.html', form=form)
 
 
 # works
@@ -987,19 +1087,22 @@ def file_complaint():
     return render_template('file-complaint.html', form=form)
 
 
-# add edit functionality
+# add edit functionality to phonenum
 @app.route('/student-profile/<string:student_id>')
 @is_logged_in
 def student_profile(student_id):
+    room = None
+    building = None
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM student WHERE id = %s", [student_id])
         student = cur.fetchone()
-        cur.execute("SELECT * FROM room WHERE id = %s", [student['roomno']])
-        room = cur.fetchone()
-        cur.execute("SELECT * FROM building WHERE id = %s", [room['buildingid']])
-        building = cur.fetchone()
-        cur.execute("SELECT * FROM request WHERE studentid = %s AND is_responded = FALSE", [student_id])
+        if student['roomno']:
+            cur.execute("SELECT * FROM room WHERE id = %s", [student['roomno']])
+            room = cur.fetchone()
+            cur.execute("SELECT * FROM building WHERE id = %s", [room['buildingid']])
+            building = cur.fetchone()
+        cur.execute("SELECT * FROM request WHERE studentid = %s", [student_id])
         requests = cur.fetchall()
         cur.execute("SELECT * FROM payment WHERE studentid = %s", [student_id])
         payments = cur.fetchall()
@@ -1011,4 +1114,12 @@ def student_profile(student_id):
 
 
 if __name__ == "__main__":
-    app.run()
+
+    DATABASE_URI = os.getenv("DATABASE_URL")
+    if ENV == 'PROD':
+        app.debug = False
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port)
+    else:
+        app.debug = True
+        app.run()

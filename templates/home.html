@@ -5,21 +5,21 @@
     {% if session.logged_in == NULL %}
       <h1>Welcome To ITU Dormitories</h1>
       <p class="lead">This website is created to ease the communication between ITU students and the dorm administration.</p>
-        <a href="/register-student" class="btn btn-success btn-lg">Register as Student</a>
-        <a href="/register-supervisor" class="btn btn-success btn-lg">Register as Supervisor</a>
-        <a href="/login" class="btn btn-primary btn-lg">Login</a>
+        <a href="/register-student" class="btn btn-primary btn-lg">Register as Student</a>
+        <a href="/register-supervisor" class="btn btn-danger btn-lg">Register as Supervisor</a>
+        <a href="/login" class="btn btn-success btn-lg">Login</a>
     {% elif session.logged_in and session.usertype == 'student' %}
       <h1>Welcome {{session.firstname | safe}} {{session.surname | safe}}</h1>
-        <a href="/profile" class="btn btn-success btn-lg">Go to Your Profile</a>
-        <a href="/requests" class="btn btn-primary btn-lg">Make Requests</a>
-        <a href="/upload-receipt" class="btn btn-warning btn-lg">Upload Rent Receipt</a>
+        <a href="/student-profile" class="btn btn-success btn-lg">Go to Your Profile</a>
+        <a href="/requests" class="btn btn-warning btn-lg">Make Requests</a>
+        <a href="/upload-receipt" class="btn btn-danger btn-lg">Upload Rent Receipt</a>
     {% elif session.logged_in and session.usertype == 'supervisor' %}
       <h1>Welcome {{session.firstname | safe}} {{session.surname | safe}}</h1>
-        <a href="/search-students" class="btn btn-success btn-lg">Search Students</a>
-        <a href="/assign-students" class="btn btn-primary btn-lg">Assign Students</a>
-        <a href="/edit-dorm" class="btn btn-warning btn-lg">Edit Dorm</a>
+        <a href="/search-students" class="btn btn-danger btn-lg">Search Students</a>
+        <a href="/assign-students" class="btn btn-warning btn-lg">Assign Students</a>
+        <a href="/edit-dorm" class="btn btn-success btn-lg">Edit Dorm</a>
     {% else %}
-      <h1>Welcome admin</h1>
+      <h1>Welcome</h1>
     {% endif %}
   </div>
 {% endblock %}

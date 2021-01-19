@@ -3,6 +3,10 @@
 {% block body %}
   <h1>{{dorm.dormname}}</h1>
   <hr>
+  {% if dorm.picture %}
+  <img src="/static/uploads/{{dorm.picture}}" alt="{{dorm.dormname}}" width="500">
+  {% endif %}
+  </br></br>
   <div>
     {{dorm.dormdescription | safe}}
   </div>

@@ -3,14 +3,23 @@
 {% block body %}
     {% from "includes/_formhelpers.html" import render_field %}
     <h2>Old Description</h2>
+        {% if dorm.picture %}
+            <img src="/static/uploads/{{dorm.picture}}" alt="{{dorm.dormname}}" width="500">
+        {% endif %}
+        </br></br>
         <p>
         {{dorm.dormdescription | safe}}
         </p>
       <h2>New Description</h2>
-      <form method="POST" action="">
+      <form method="POST" action="" enctype="multipart/form-data">
+          {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
         <div class="form-group">
           {{render_field(form.new_description, class_="form-control")}}
         </div>
+          <div class="form-group">
+            {{render_field(form.picture, class_="form-control")}}
+          </div>
         <p><input type="submit" class="btn btn-primary" value="Submit"></p>
       </form>
 {% endblock %}

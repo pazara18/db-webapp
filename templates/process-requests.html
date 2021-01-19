@@ -4,7 +4,13 @@
   <h1>Requests</h1>
   <ul class="list-group">
     {% for request in requests %}
-      <li class="list-group-item"><a href="request/{{request.request_id}}">Request #{{request.request_id}}</a></li>
+      {% if request.is_responded == False %}
+        <li class="list-group-item"><a href="request/{{request.request_id}}">Request #{{request.request_id}} Status: Pending</a></li>
+      {% elif request.is_approved == True %}
+        <li class="list-group-item"><a href="request/{{request.request_id}}">Request #{{request.request_id}} Status: Accepted</a></li>
+      {% elif request.is_approved == False %}
+        <li class="list-group-item"><a href="request/{{request.request_id}}">Request #{{request.request_id}} Status: Rejected</a></li>
+      {% endif %}
     {% endfor %}
   </ul>
 {% endblock %}
