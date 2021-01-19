@@ -26,7 +26,6 @@ def parse_tuple(string):
     if type(s) == tuple:
         return s
 
-
 # works
 def get_dorm_list():
     with dbapi2.connect(DATABASE_URI) as connection:
