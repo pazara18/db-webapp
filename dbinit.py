@@ -89,5 +89,5 @@ if __name__ == "__main__":
     if app.ENV == 'DEV':
         url = "postgres://postgres:admin@localhost:5432/dorms"
     else:
-        url ='postgres://xmumbtkwyfnwjw:f6b558df185eb87ebb43097a973d453d72e56112d28431d9867ab967ad686ef9@ec2-34-230-149-169.compute-1.amazonaws.com:5432/d2p706ei2cossa'
+        url ='postgres://tbplxswrvmlgow:992daea8a1c83983c8259008549cfbf384d58cecea2f13efc68ff4334261061f@ec2-34-192-72-159.compute-1.amazonaws.com:5432/ddtd1uh2u2t31p'
     initialize(url)
