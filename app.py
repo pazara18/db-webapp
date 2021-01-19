@@ -125,7 +125,7 @@ class RegisterStudentForm(Form):
     ])
     confirm = PasswordField('Confirm Password')
 
-    room_list = get_room_list()
+    room_list = []
 
     room = SelectField('Choose your Room', choices=room_list, validators=[validators.DataRequired()])
 
@@ -142,7 +142,7 @@ class RegisterSupervisorForm(Form):
     ])
     confirm = PasswordField('Confirm Password')
 
-    dorm_list = get_dorm_list()
+    dorm_list = []
 
     dorm = SelectField('Choose your Dorm', choices=dorm_list, validators=[validators.DataRequired()])
 
