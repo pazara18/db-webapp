@@ -1,5 +1,5 @@
 import psycopg2 as dbapi2
-
+import app
 INIT_STATEMENTS = [
     """CREATE TABLE IF NOT EXISTS DORMADMIN (
     id SERIAL PRIMARY KEY,
@@ -86,6 +86,8 @@ def initialize(url):
 
 
 if __name__ == "__main__":
-    url = "postgres://postgres:admin@localhost:5432/dorms"
-        #url ='postgres://xmumbtkwyfnwjw:f6b558df185eb87ebb43097a973d453d72e56112d28431d9867ab967ad686ef9@ec2-34-230-149-169.compute-1.amazonaws.com:5432/d2p706ei2cossa'
+    if app.ENV == 'DEV':
+        url = "postgres://postgres:admin@localhost:5432/dorms"
+    else:
+        url ='postgres://xmumbtkwyfnwjw:f6b558df185eb87ebb43097a973d453d72e56112d28431d9867ab967ad686ef9@ec2-34-230-149-169.compute-1.amazonaws.com:5432/d2p706ei2cossa'
     initialize(url)
