@@ -9,7 +9,7 @@ import ast
 
 app = Flask(__name__)
 
-ENV = 'DEV'
+ENV = 'PROD'
 
 if ENV == 'DEV':
     app.debug = True
