@@ -8,6 +8,7 @@ from functools import wraps
 import ast
 
 app = Flask(__name__)
+app.secret_key = 'secret123'
 
 ENV = 'PROD'
 
@@ -1010,5 +1011,4 @@ def student_profile(student_id):
 
 
 if __name__ == "__main__":
-    app.secret_key = '42'
     app.run()
