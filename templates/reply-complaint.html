@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Complaint #{{complaint.id}}</h1>
+    <h2>Complaint</h2>
+  <p>
+    {{complaint.complaint | safe}}
+  </p>
+
+    {% from "includes/_formhelpers.html" import render_field %}
+      {% if complaint.is_responded %}
+        <h2>Supervisor's Response</h2>
+        <p>
+        {{complaint.response | safe}}
+        </p>
+      {% elif session.usertype == 'supervisor' %}
+      <h2>Your Response</h2>
+      <form method="POST" action="">
+        <div class="form-group">
+          {{render_field(form.reply, class_="form-control")}}
+        </div>
+        <p><input type="submit" class="btn btn-primary" value="Submit"></p>
+      </form>
+      {% endif %}
+{% endblock %}

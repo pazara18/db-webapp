@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Complaints</h1>
+  <ul class="list-group">
+    {% for complaint in complaints %}
+      <li class="list-group-item"><a href="complaint/{{complaint.id}}">Complaint #{{complaint.id}}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}

@@ -4,6 +4,16 @@
   <h1>{{room.roomname}}</h1>
   <hr>
   <div>
-    {{room.roomdescription | safe}}
+    <p>{{room.roomdescription | safe}}</p> </br></br>
+    Capacity: {{room.capacity | safe}} </br></br>
+    Current Number of Students: {{room.allotment | safe}}
+    <h2>Current Occupants</h2>
+    {% if session.logged_in %}
+      {% for student in students %}
+        <li class="list-group-item"><a href="/student-profile/{{student.id}}">{{student.firstname}} {{student.surname}}</a></li>
+      {% endfor %}
+    {% else %}
+      <p>Please log in to see current occupants</p>
+    {% endif %}
   </div>
 {% endblock %}

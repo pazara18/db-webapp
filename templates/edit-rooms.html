@@ -1,0 +1,8 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>List of Rooms</h1>
+    {% for room in rooms %}
+      <li class="list-group-item"><a href="/edit-room/{{room.id}}">{{room.roomname}}</a></li>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+    {% from "includes/_formhelpers.html" import render_field %}
+    <h2>Old Description</h2>
+        <p>
+        {{dorm.dormdescription | safe}}
+        </p>
+      <h2>New Description</h2>
+      <form method="POST" action="">
+        <div class="form-group">
+          {{render_field(form.new_description, class_="form-control")}}
+        </div>
+        <p><input type="submit" class="btn btn-primary" value="Submit"></p>
+      </form>
+{% endblock %}

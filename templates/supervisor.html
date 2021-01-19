@@ -7,4 +7,6 @@
     Email: {{supervisor.email | safe}} </br>
     Phone Number: {{supervisor.phonenum | safe}}
   </div>
+  <h2>Building information</h2>
+    <li class="list-group-item"><a href="/dorm/{{dorm.id | safe}}">{{dorm.dormname | safe}}</a></li>
 {% endblock %}

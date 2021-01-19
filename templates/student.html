@@ -9,4 +9,27 @@
     Date Of Birth: {{student.date_of_birth}}  </br>
     Date Of Enterance: {{student.date_of_entrance}}  </br>
   </div>
+  <h3>Room Page</h3>
+  <li class="list-group-item"><a href="/room/{{room.id}}">{{room.roomname | safe}}</a></li>
+  <h3>Building Page</h3>
+  <li class="list-group-item"><a href="/dorm/{{building.id}}">{{building.dormname | safe}}</a></li>
+  {% if session.logged_in %}
+    {% if session.usertype == 'supervisor' or session.usertype == 'student' %}
+      <h3>Complaints</h3>
+      {% for complaint in complaints %}
+        <li class="list-group-item"><a href="/complaint/{{complaint.id}}">complaint #{{complaint.id | safe}}</a></li>
+      {% endfor %}
+    {% endif %}
+    {% if session.usertype == 'admin' %}
+      <h3>Requests</h3>
+      {% for request in requests %}
+        <li class="list-group-item"><a href="/request/{{request.id}}">request #{{request.id | safe}}</a></li>
+      {% endfor %}
+    {% endif %}
+    <h3>Payments</h3>
+    {% for payment in payments %}
+      <li class="list-group-item"><a href="/payment/{{payment.id}}">payment of {{student.firstname}} {{student.surname}} at {{payment.payment_date}}</a></li>
+    {% endfor %}
+
+  {% endif %}
 {% endblock %}

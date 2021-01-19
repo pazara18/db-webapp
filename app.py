@@ -20,12 +20,14 @@ else:
                    '-230-149-169.compute-1.amazonaws.com:5432/d2p706ei2cossa '
 
 
+# works
 def parse_tuple(string):
     s = ast.literal_eval(str(string))
     if type(s) == tuple:
         return s
 
 
+# works
 def get_dorm_list():
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor()
@@ -42,6 +44,7 @@ def get_dorm_list():
     return dorm_list
 
 
+# works
 def get_room_list():
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor()
@@ -89,23 +92,26 @@ def dorm(building_id):
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM building WHERE id = %s", [building_id])
         dorm = cur.fetchone()
-        cur.close()
-    with dbapi2.connect(DATABASE_URI) as connection:
-        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM room WHERE buildingid = %s", [building_id])
         rooms = cur.fetchall()
+        cur.execute("SELECT * FROM supervisor WHERE id = %s", [dorm['supervisorid']])
+        supervisor = cur.fetchone()
         cur.close()
-    return render_template('dorm.html', dorm=dorm, rooms=rooms)
+    print(type(supervisor))
+    return render_template('dorm.html', dorm=dorm, supervisor=supervisor, rooms=rooms)
 
 
+# works
 @app.route('/room/<string:room_id>/')
 def room(room_id):
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM room WHERE id = %s", [room_id])
         room = cur.fetchone()
+        cur.execute("SELECT * FROM student WHERE roomno = %s", [room_id])
+        students = cur.fetchall()
         cur.close()
-    return render_template('room.html', room=room)
+    return render_template('room.html', room=room, students=students)
 
 
 # works
@@ -129,7 +135,7 @@ class RegisterStudentForm(Form):
 # works
 class RegisterSupervisorForm(Form):
     name = StringField('Name', [validators.Length(min=1, max=50)])
-    surname = StringField('Surrname', [validators.Length(min=4, max=25)])
+    surname = StringField('Surrname', [validators.Length(min=1, max=50)])
     phonenum = StringField('Phone Number', [validators.Length(min=10, max=11)])
     email = StringField('Email', [validators.Length(min=6, max=50)])
     password = PasswordField('Password', [
@@ -153,24 +159,40 @@ class AddDormForm(Form):
     room4_count = IntegerField('Number of 4-person Rooms', [validators.NumberRange(min=0, max=10)])
     room5_count = IntegerField('Number of 5-person Rooms', [validators.NumberRange(min=0, max=10)])
 
-# class EditDormForm(Form):
+
+class EditDormForm(Form):
+    new_description = TextAreaField('New description for the dorm', [validators.Length(min=30, max=250)])
 
 
+# works
 class AddRoomForm(Form):
-    room1_count = IntegerField('Number of 1-person Rooms', [validators.NumberRange(min=0, max=10)])
-    room2_count = IntegerField('Number of 2-person Rooms', [validators.NumberRange(min=0, max=10)])
-    room3_count = IntegerField('Number of 3-person Rooms', [validators.NumberRange(min=0, max=10)])
-    room4_count = IntegerField('Number of 4-person Rooms', [validators.NumberRange(min=0, max=10)])
-    room5_count = IntegerField('Number of 5-person Rooms', [validators.NumberRange(min=0, max=10)])
+    capacity = IntegerField('Room capacity', [validators.NumberRange(min=1, max=5)])
+    name = StringField('Room name', [validators.Length(min=1, max=50)])
+    description = TextAreaField('Description for the room', [validators.Length(min=30, max=250)])
 
-# class EditRoomForm(Form):
+
+class EditRoomForm(Form):
+    new_capacity = IntegerField('New room capacity', [validators.NumberRange(min=1, max=5)])
+    new_name = StringField('New room name', [validators.Length(min=1, max=50)])
+    new_description = TextAreaField('New description for the room', [validators.Length(min=30, max=250)])
+
 
 # class ReceiptForm(Form):
 
-# class SearchStudentForm():
+# works
+class SearchStudentForm(Form):
+    name = StringField('Name', [validators.Length(min=1, max=50)])
+    surname = StringField('Surname', [validators.Length(min=1, max=50)])
 
+
+# works
 class FileComplaintForm(Form):
     complaint = TextAreaField('Your Complaint', [validators.Length(min=30, max=250)])
+
+
+# works
+class ReplyComplaintForm(Form):
+    reply = TextAreaField('Your Reply', [validators.Length(min=30, max=250)])
 
 
 # works
@@ -361,7 +383,7 @@ def manage_buildings():
         return render_template('manage-dorms.html')
     else:
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
 
 
 # works
@@ -370,7 +392,7 @@ def manage_buildings():
 def add_dorm():
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     form = AddDormForm(request.form)
     if request.method == 'POST' and form.validate():
         name = form.dormname.data
@@ -460,7 +482,7 @@ def add_dorm():
 def remove_dorm():
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     dormlist = request.form.getlist('dorm-checkbox')
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
@@ -487,7 +509,7 @@ def remove_dorm():
 def delete_students():
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     studentlist = request.form.getlist('student-checkbox')
 
     with dbapi2.connect(DATABASE_URI) as connection:
@@ -520,7 +542,7 @@ def delete_students():
 def delete_supervisors():
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     supervisorlist = request.form.getlist('supervisor-checkbox')
 
     with dbapi2.connect(DATABASE_URI) as connection:
@@ -548,7 +570,7 @@ def delete_supervisors():
 def process_requests():
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM request WHERE is_responded = FALSE")
@@ -556,13 +578,14 @@ def process_requests():
         cur.close()
     return render_template('process-requests.html', requests=requests)
 
+
 # works
 @app.route('/request/<string:request_id>', methods=['GET', 'POST'])
 @is_logged_in
 def request_page(request_id):
     if session['usertype'] != 'admin':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM request WHERE request_id = %s", [request_id])
@@ -584,8 +607,9 @@ def request_page(request_id):
                                 {'id': int(room_row['id'])})
 
                     cur.execute("UPDATE student SET roomno = %(roomno)s WHERE id = %(id)s",
-                                {'roomno': int(room_row['id']) ,'id': int(student_row['id'])})
-                    cur.execute("UPDATE request SET is_responded = %s WHERE request_id = %s",  [True, request_id])
+                                {'roomno': int(room_row['id']), 'id': int(student_row['id'])})
+                    cur.execute("UPDATE request SET is_responded = %s WHERE request_id = %s", [True, request_id])
+                    cur.execute("UPDATE request SET is_approved = %s WHERE request_id = %s", [True, request_id])
                     cur.close()
                 flash('Request approved', 'success')
                 return redirect(url_for('home_page'))
@@ -600,6 +624,7 @@ def request_page(request_id):
             with dbapi2.connect(DATABASE_URI) as connection:
                 cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
                 cur.execute("UPDATE request SET is_responded = %s WHERE request_id = %s", [True, request_id])
+                cur.execute("UPDATE request SET is_approved = %s WHERE request_id = %s", [False, request_id])
                 cur.close()
             flash('Request rejected', 'danger')
             return redirect(url_for('home_page'))
@@ -607,97 +632,278 @@ def request_page(request_id):
     return render_template('request.html', request=request_row, student=student_row, room=room_row)
 
 
-# todo
+# works
 # supervisor pages begin
-# display student profile page
-@app.route('/search-students')
+@app.route('/search-students', methods=['GET', 'POST'])
 @is_logged_in
 def search_students():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
-    # enter student name and surname to textbox
-    # if supervisor is assigned to a building, search within that building using joins
-    # if supervisor is unemployed print you cant search and return to home_page
-    return "TODO"
+        return redirect(url_for('home_page'))
+    form = SearchStudentForm(request.form)
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+        building = cur.fetchone()
+        cur.close()
+    if not building:
+        flash('You cannot search as you are not assigned to a building', 'danger')
+        return redirect(url_for('home_page'))
+    if request.method == 'POST':
+        student_name = form.name.data
+        student_surname = form.surname.data
+
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute(
+                "SELECT student.* FROM building JOIN room ON building.supervisorid = %s JOIN student ON student.roomno = room.id AND student.firstname = %s AND student.surname = %s",
+                [building['id'], student_name, student_surname])
+            student_row = cur.fetchall()
+            cur.close()
+        if not student_row:
+            flash('No student exists by that name in your dorm!', 'danger')
+            return redirect(url_for('home_page'))
+
+        return render_template('search-students.html', students=student_row)
+
+    return render_template('search-students.html')
 
 
-# todo
-@app.route('/edit-dorm/<string:dorm_id>')
+# works
+@app.route('/edit-dorm')
 @is_logged_in
-def edit_dorm(dorm_id):
-    if session['usertype'] != 'supervisor':
+def edit_dorm():
+    if session['usertype'] == 'supervisor':
+        return render_template('edit-dorm.html')
+    else:
         flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
-    return render_template('edit-dorm.html')
+        return redirect(url_for('home_page'))
 
-# todo
-@app.route('/add_room')
+
+# works
+@app.route('/add-room', methods=['GET', 'POST'])
 @is_logged_in
 def add_room():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
+    form = AddRoomForm(request.form)
+    capacity = form.capacity.data
+    name = form.name.data
+    description = form.description.data
+    if request.method == 'POST' and form.validate():
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+            building = cur.fetchone()
+            if not building:
+                flash('You cannot add rooms as you are not assigned to a building!', 'danger')
+                return redirect(url_for('home_page'))
+            room_tuple = (building['id'], name, capacity, description)
+            cur.execute("INSERT INTO room(buildingid, roomname, capacity, roomdescription) VALUES (%s,%s,%s,%s)", room_tuple)
+            cur.close()
 
-# todo
-@app.route('/remove-room')
+        flash('Room added', 'success')
+        return redirect(url_for('home_page'))
+
+
+    return render_template('add-room.html', form=form)
+
+
+# works
+@app.route('/remove-room', methods=['GET', 'POST'])
 @is_logged_in
 def remove_room():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
+    roomlist = request.form.getlist('room-checkbox')
 
-# todo
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+        building = cur.fetchone()
+        cur.execute("SELECT * FROM room WHERE room.buildingid = %s", [building['id']])
+        rooms = cur.fetchall()
+        cur.close()
+
+    if request.method == 'POST':
+        for room in roomlist:
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute("DELETE FROM room WHERE id = %(id)s", {'id': int(room)})
+                cur.close()
+
+        if roomlist != []:
+            flash('Room(s) deleted', 'success')
+            return redirect(url_for('home_page'))
+
+    return render_template('remove-rooms.html', rooms=rooms)
+
+
+# works
 @app.route('/edit-room')
 @is_logged_in
 def edit_room():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+        building = cur.fetchone()
+        if not building:
+            flash('You cannot edit rooms as you are not assigned to a building!', 'danger')
+            return redirect(url_for('home_page'))
+        cur.execute("SELECT * FROM room WHERE room.buildingid = %s", [building['id']])
+        rooms = cur.fetchall()
+        cur.close()
 
-# todo
-@app.route('/edit-dorm-descr')
+    return render_template('edit-rooms.html', rooms=rooms)
+
+
+# works
+@app.route('/edit-room/<string:room_id>', methods=['GET', 'POST'])
+@is_logged_in
+def edit_room_page(room_id):
+    if session['usertype'] != 'supervisor':
+        flash('Unauthorized, Please login as supervisor', 'danger')
+        return redirect(url_for('home_page'))
+
+    form = EditRoomForm(request.form)
+    new_capacity = form.new_capacity.data
+    print(new_capacity)
+    new_name = form.new_name.data
+    new_description = form.new_description.data
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM room WHERE room.id = %s", [room_id])
+        room = cur.fetchone()
+        cur.close()
+
+    if request.method == 'POST' and form.validate():
+        if new_capacity < int(room['allotment']):
+            flash('New capacity cannot be lower than current occupant count!', 'danger')
+            return redirect(url_for('home_page'))
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("UPDATE room SET capacity = %s, roomname = %s, roomdescription = %s WHERE room.id = %s",
+                        [new_capacity, new_name, new_description, room_id])
+            cur.close()
+
+        flash('Room updated', 'success')
+        return redirect(url_for('home_page'))
+
+    return render_template('edit-room.html', form=form, room=room)
+
+
+# works
+@app.route('/edit-dorm-descr', methods=['GET', 'POST'])
 @is_logged_in
 def edit_dorm_description():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
+    form = EditDormForm(request.form)
+    new_description = form.new_description.data
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+        building = cur.fetchone()
+        cur.close()
+    if request.method == 'POST' and form.validate():
+        if not building:
+            flash('You cannot edit as you are not assigned to a dorm currently!', 'danger')
+            return redirect(url_for('home_page'))
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("UPDATE building SET dormdescription = %s WHERE building.id = %s",
+                        [new_description, building['id']])
+            cur.close()
+        flash('Description updated', 'success')
+        return redirect(url_for('home_page'))
+
+    return render_template('edit-dorm-descr.html', dorm=building, form=form)
 
 
-# todo
+# works
 @app.route('/reply-complaints')
 @is_logged_in
 def reply_complaints():
     if session['usertype'] != 'supervisor':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
-    # display all complaints made by the students in the building
-    # click on individual complaints and write replies to textbox
-    return "TODO"
+        return redirect(url_for('home_page'))
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM building WHERE building.supervisorid = %s", [session['id']])
+        building = cur.fetchone()
+        cur.close()
+    if not building:
+        flash('You cannot respond to complaints as you are not assigned to a dorm!', 'danger')
+        return redirect(url_for('home_page'))
+    else:
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("SELECT * FROM complaint WHERE complaint.buildingid = %s AND complaint.is_responded = FALSE",
+                        [building['id']])
+            complaints = cur.fetchall()
+            cur.close()
+
+    return render_template('reply-complaints.html', complaints=complaints)
 
 
-# add edit functionality display building info
+# works
+@app.route('/complaint/<string:complaint_id>', methods=['GET', 'POST'])
+@is_logged_in
+def complaint_page(complaint_id):
+    form = ReplyComplaintForm(request.form)
+    reply = form.reply.data
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute("SELECT * FROM complaint WHERE complaint.id = %s", [complaint_id])
+        complaint = cur.fetchone()
+        cur.close()
+
+    if bool(session['usertype'] != 'supervisor') ^ bool(
+            session['usertype'] == 'student' and session['id'] == int(complaint['studentid'])):
+        flash('Complaints are visible to supervisor and the student only!', 'danger')
+        return redirect(url_for('home_page'))
+
+    if request.method == 'POST' and form.validate():
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("UPDATE complaint SET response = %s ,is_responded = %s WHERE complaint.id = %s",
+                        [reply, True, complaint_id])
+            cur.close()
+
+        flash('Complaint Replied', 'success')
+        return redirect(url_for('home_page'))
+
+    return render_template('reply-complaint.html', form=form, complaint=complaint)
+
+
+# add edit functionality
 @app.route('/supervisor-profile/<string:supervisor_id>')
 @is_logged_in
 def supervisor_profile(supervisor_id):
-    if session['usertype'] != 'supervisor':
-        flash('Unauthorized, Please login as supervisor', 'danger')
-        return redirect(url_for('login'))
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM supervisor WHERE id = %s", [supervisor_id])
         supervisor = cur.fetchone()
+        cur.execute("SELECT * FROM building WHERE supervisorid = %s", [supervisor_id])
+        dorm = cur.fetchone()
         cur.close()
-    return render_template('supervisor.html', supervisor=supervisor)
+    return render_template('supervisor.html', supervisor=supervisor, dorm=dorm)
 
 
 # todo
+# student pages begin
 @app.route('/upload-receipt')
 @is_logged_in
 def upload_receipts_page():
     if session['usertype'] != 'student':
         flash('Unauthorized, Please login as admin', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     # have filebox that accepts pdf inputs
     # create payment entity in database
     return "TODO"
@@ -711,7 +917,7 @@ def make_requests():
         return render_template('make-requests.html')
     else:
         flash('Unauthorized, Please login as student', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
 
 
 # works
@@ -720,12 +926,14 @@ def make_requests():
 def room_change_requests():
     if session['usertype'] != 'student':
         flash('Unauthorized, Please login as student', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     room_choice = request.form.getlist('room-radio')
 
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
-        cur.execute("SELECT * FROM room WHERE capacity > allotment")
+        cur.execute("SELECT * FROM student WHERE id = %s", [session['id']])
+        student = cur.fetchone()
+        cur.execute("SELECT * FROM room WHERE capacity > allotment AND id != %s", [student['roomno']])
         rooms = cur.fetchall()
         cur.close()
 
@@ -747,7 +955,7 @@ def room_change_requests():
 def file_complaint():
     if session['usertype'] != 'student':
         flash('Unauthorized, Please login as student', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('home_page'))
     form = FileComplaintForm(request.form)
     if request.method == 'POST' and form.validate():
         complaint = form.complaint.data
@@ -780,7 +988,7 @@ def file_complaint():
     return render_template('file-complaint.html', form=form)
 
 
-# add edit profile functionality display rooms building complaints requests
+# add edit functionality
 @app.route('/student-profile/<string:student_id>')
 @is_logged_in
 def student_profile(student_id):
@@ -788,10 +996,21 @@ def student_profile(student_id):
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
         cur.execute("SELECT * FROM student WHERE id = %s", [student_id])
         student = cur.fetchone()
+        cur.execute("SELECT * FROM room WHERE id = %s", [student['roomno']])
+        room = cur.fetchone()
+        cur.execute("SELECT * FROM building WHERE id = %s", [room['buildingid']])
+        building = cur.fetchone()
+        cur.execute("SELECT * FROM request WHERE studentid = %s AND is_responded = FALSE", [student_id])
+        requests = cur.fetchall()
+        cur.execute("SELECT * FROM payment WHERE studentid = %s", [student_id])
+        payments = cur.fetchall()
+        cur.execute("SELECT * FROM complaint WHERE studentid = %s ", [student_id])
+        complaints = cur.fetchall()
         cur.close()
-    return render_template('student.html', student=student)
+    return render_template('student.html', student=student, room=room, building=building, requests=requests,
+                           payments=payments, complaints=complaints)
 
 
 if __name__ == "__main__":
-    app.secret_key = '3169420'
+    app.secret_key = '42'
     app.run()

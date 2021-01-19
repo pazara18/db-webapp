@@ -68,7 +68,8 @@ INIT_STATEMENTS = [
     request_id SERIAL PRIMARY KEY,
     studentid INTEGER NOT NULL REFERENCES STUDENT(id) ON DELETE CASCADE,
     roomno INTEGER NOT NULL REFERENCES ROOM(id) ON DELETE CASCADE,
-    is_responded BOOLEAN DEFAULT 'false'
+    is_responded BOOLEAN DEFAULT 'false',
+    is_approved BOOLEAN
     )""",
 
     """INSERT INTO dormadmin(email, pword) VALUES

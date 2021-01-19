@@ -6,6 +6,11 @@
   <div>
     {{dorm.dormdescription | safe}}
   </div>
+  <h1>Supervisor</h1>
+  <hr>
+  <div>
+    <li class="list-group-item"><a href="/supervisor-profile/{{supervisor.id}}">{{supervisor.firstname | safe}} {{supervisor.surname | safe}}</a></li>
+  </div>
   <h1>List of Rooms</h1>
     {% for room in rooms %}
       <li class="list-group-item"><a href="/room/{{room.id}}">{{room.roomname}}</a></li>

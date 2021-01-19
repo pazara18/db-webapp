@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Supervisors</h1>
+  <form action="" method="POST">
+  <ul class="form-check">
+    {% for room in rooms %}
+      <input type="checkbox" id="{{room.id}}" name="room-checkbox" value="{{room.id}}">
+      <a href="/room/{{room.id}}">{{room.roomname}}</a> </br>
+    {% endfor %}
+    </br>
+    </br>
+    </br>
+  </ul>
+  <button type="submit" class="btn btn-primary">Remove Selected From Database</button>
+  </form>
+{% endblock %}
