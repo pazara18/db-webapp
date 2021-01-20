@@ -13,7 +13,7 @@ from datetime import datetime
 from uuid import uuid4
 import os
 
-ENV = 'DEV'
+ENV = 'PROD'
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
