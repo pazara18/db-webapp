@@ -17,11 +17,13 @@ ENV = 'PROD'
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
+MYDIR = os.path.dirname(__file__)
 UPLOAD_PATH = "static/uploads/"
 app.config['UPLOAD_FOLDER'] = UPLOAD_PATH
-DORM_FOLDER = app.config['UPLOAD_FOLDER'] + 'img/dorm/'
-ROOM_FOLDER = app.config['UPLOAD_FOLDER'] + 'img/room/'
-RECEIPT_FOLDER = app.config['UPLOAD_FOLDER'] + 'docs/'
+DIR = MYDIR + "/" + UPLOAD_PATH 
+DORM_FOLDER = DIR + 'img/dorm/'
+ROOM_FOLDER = DIR + 'img/room/'
+RECEIPT_FOLDER = DIR + 'docs/'
 
 
 # works
