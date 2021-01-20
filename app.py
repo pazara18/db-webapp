@@ -1018,7 +1018,7 @@ def edit_supervisor_profile(supervisor_id):
             cur.close()
             if phonenum_unique:
                 flash('This phone is already registered', 'danger')
-                return redirect(url_for('register_student'))
+                return redirect(url_for('home_page'))
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
             cur.execute("UPDATE supervisor SET phonenum = %s WHERE supervisor.id = %s", [phone, supervisor_id])
@@ -1148,7 +1148,7 @@ def file_complaint():
     if request.method == 'POST' and form.validate():
         complaint = form.complaint.data
         student_id = session['id']
-        # do some sql magic to get building id from student id
+
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor()
             cur.execute("SELECT roomno FROM student WHERE id = %s", (student_id,))
@@ -1219,7 +1219,7 @@ def edit_student_profile(student_id):
             cur.close()
             if phonenum_unique:
                 flash('This phone is already registered', 'danger')
-                return redirect(url_for('register_student'))
+                return redirect(url_for('home_page'))
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
             cur.execute("UPDATE student SET phonenum = %s WHERE student.id = %s", [phone, student_id])
