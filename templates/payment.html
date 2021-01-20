@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Payment at {{payment.payment_date.strftime('%Y-%m')}}</h1>
+  <hr>
+  <div>
+    {% if payment.receipt_file %}
+      <a href="/static/uploads/docs/{{payment.receipt_file}}">Receipt File</a>
+    {% endif %}
+    </br></br>
+    {% if payment.is_approved %}
+      <p>Status: Payment accepted</p>
+    {% elif payment.is_approved == False and session.usertype == 'supervisor' %}
+    <form action="" method="POST">
+    <input type="submit" class="btn btn-outline-success" name="submit" value="accept">
+    <input type="submit" class="btn btn-outline-danger" name="submit" value="reject">
+    </form>
+
+    {% endif %}
+    </br></br></br></br></br></br>
+  </div>
+{% endblock %}

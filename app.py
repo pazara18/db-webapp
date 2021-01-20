@@ -9,10 +9,11 @@ import psycopg2.extras as dbapi2extras
 from functools import wraps
 from werkzeug.utils import secure_filename
 import ast
+from datetime import datetime
 from uuid import uuid4
 import os
 
-ENV = 'PROD'
+ENV = 'DEV'
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
@@ -95,7 +96,9 @@ class EditRoomForm(FlaskForm):
 
 
 class ReceiptForm(FlaskForm):
-    receipt = FileField('Upload Receipt (pdf)', validators=[FileAllowed(['pdf'], 'PDF Documents only!'), FileRequired()])
+    receipt = FileField('Upload Receipt (pdf)',
+                        validators=[FileAllowed(['pdf'], 'PDF Documents only!'), FileRequired()])
+
 
 # works
 class SearchStudentForm(FlaskForm):
@@ -111,6 +114,11 @@ class FileComplaintForm(FlaskForm):
 # works
 class ReplyComplaintForm(FlaskForm):
     reply = TextAreaField('Your Reply', [validators.Length(min=20, max=1500)])
+
+
+# works
+class EditProfileForm(FlaskForm):
+    phonenum = StringField('New Phone Number', [validators.Length(min=10, max=11)])
 
 
 # works
@@ -617,6 +625,7 @@ def process_requests():
     return render_template('process-requests.html', requests=requests)
 
 
+# todo
 # works
 @app.route('/request/<string:request_id>', methods=['GET', 'POST'])
 @is_logged_in
@@ -630,6 +639,8 @@ def request_page(request_id):
         request_row = cur.fetchone()
         cur.execute("SELECT * FROM student WHERE id = %s", [request_row['studentid']])
         student_row = cur.fetchone()
+        cur.execute("SELECT * FROM room WHERE id = %s", [student_row['id']])
+        old_room_row = cur.fetchone()
         cur.execute("SELECT * FROM room WHERE id = %s", [request_row['roomno']])
         room_row = cur.fetchone()
         cur.close()
@@ -643,7 +654,8 @@ def request_page(request_id):
                                     {'id': int(student_row['roomno'])})
                     cur.execute("UPDATE ROOM SET allotment = allotment + 1 WHERE id = %(id)s",
                                 {'id': int(room_row['id'])})
-
+                    if room_row['buildingid'] != old_room_row['buildingid']:
+                        cur.execute("DELETE FROM complaint WHERE studentid = %s", [int(student_row['id'])])
                     cur.execute("UPDATE student SET roomno = %(roomno)s WHERE id = %(id)s",
                                 {'roomno': int(room_row['id']), 'id': int(student_row['id'])})
                     cur.execute("UPDATE request SET is_responded = %s WHERE request_id = %s", [True, request_id])
@@ -911,7 +923,7 @@ def edit_dorm_description():
 @is_logged_in
 def reply_complaints():
     if session['usertype'] != 'supervisor':
-        flash('Unauthorized, Please login as admin', 'danger')
+        flash('Unauthorized, Please login as supervisor', 'danger')
         return redirect(url_for('home_page'))
     with dbapi2.connect(DATABASE_URI) as connection:
         cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
@@ -962,7 +974,7 @@ def complaint_page(complaint_id):
     return render_template('reply-complaint.html', form=form, complaint=complaint)
 
 
-# add edit functionality to phonenum
+# works
 @app.route('/supervisor-profile/<string:supervisor_id>')
 @is_logged_in
 def supervisor_profile(supervisor_id):
@@ -974,6 +986,27 @@ def supervisor_profile(supervisor_id):
         dorm = cur.fetchone()
         cur.close()
     return render_template('supervisor.html', supervisor=supervisor, dorm=dorm)
+
+
+# works
+@app.route('/edit-supervisor-profile/<string:supervisor_id>', methods=['GET', 'POST'])
+@is_logged_in
+def edit_supervisor_profile(supervisor_id):
+    if session['usertype'] != 'supervisor':
+        flash('Unauthorized, Please login as admin', 'danger')
+        return redirect(url_for('home_page'))
+    form = EditProfileForm()
+    phone = form.phonenum.data
+    if request.method == 'POST' and form.validate():
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("UPDATE supervisor SET phonenum = %s WHERE supervisor.id = %s", [phone, supervisor_id])
+            cur.close()
+
+        flash('Contact Info Updated', 'success')
+        return redirect(url_for('home_page'))
+
+    return render_template('edit-supervisor-profile.html', form=form)
 
 
 # student pages begin
@@ -1006,6 +1039,41 @@ def upload_receipts_page():
         return redirect(url_for('home_page'))
 
     return render_template('upload-receipt.html', form=form)
+
+
+# todo
+@app.route('/payment/<string:student_id>$<string:payment_date>', methods=['GET', 'POST'])
+@is_logged_in
+def payment_page(student_id, payment_date):
+    year,month = payment_date.split('-')
+    with dbapi2.connect(DATABASE_URI) as connection:
+        cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+        cur.execute(
+            "SELECT * FROM payment WHERE studentid = %s AND EXTRACT (MONTH FROM payment_date) = %s AND EXTRACT (YEAR FROM payment_date) = %s", [student_id,month,year])
+        payment=cur.fetchone()
+        cur.close()
+    if bool(session['usertype'] != 'supervisor') ^ bool(
+            session['usertype'] == 'student' and session['id'] == int(payment['studentid'])):
+        flash('Payments are visible to supervisor and the student only!', 'danger')
+        return redirect(url_for('home_page'))
+
+    if request.method == 'POST':
+        if request.form['submit'] == 'accept':
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                cur.execute("UPDATE payment SET is_approved = %s WHERE studentid = %s AND payment_date = %s", [True, payment['studentid'], payment['payment_date']])
+                cur.close()
+                flash('Payment approved', 'success')
+                return redirect(url_for('home_page'))
+        elif request.form['submit'] == 'reject':
+            with dbapi2.connect(DATABASE_URI) as connection:
+                cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+                ur.execute("UPDATE payment SET is_approved = %s WHERE studentid = %s AND payment_date = %s", [False, payment['studentid'], payment['payment_date']])
+                cur.close()
+            flash('Payment rejected', 'danger')
+            return redirect(url_for('home_page'))
+
+    return render_template('payment.html', payment=payment)
 
 
 # works
@@ -1087,7 +1155,7 @@ def file_complaint():
     return render_template('file-complaint.html', form=form)
 
 
-# add edit functionality to phonenum
+# works
 @app.route('/student-profile/<string:student_id>')
 @is_logged_in
 def student_profile(student_id):
@@ -1111,6 +1179,27 @@ def student_profile(student_id):
         cur.close()
     return render_template('student.html', student=student, room=room, building=building, requests=requests,
                            payments=payments, complaints=complaints)
+
+
+# works
+@app.route('/edit-student-profile/<string:student_id>', methods=['GET', 'POST'])
+@is_logged_in
+def edit_student_profile(student_id):
+    if session['usertype'] != 'student':
+        flash('Unauthorized, Please login as admin', 'danger')
+        return redirect(url_for('home_page'))
+    form = EditProfileForm()
+    phone = form.phonenum.data
+    if request.method == 'POST' and form.validate():
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
+            cur.execute("UPDATE student SET phonenum = %s WHERE student.id = %s", [phone, student_id])
+            cur.close()
+
+        flash('Contact Info Updated', 'success')
+        return redirect(url_for('home_page'))
+
+    return render_template('edit-student-profile.html', form=form)
 
 
 if __name__ == "__main__":

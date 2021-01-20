@@ -10,8 +10,8 @@
         <a href="/login" class="btn btn-success btn-lg">Login</a>
     {% elif session.logged_in and session.usertype == 'student' %}
       <h1>Welcome {{session.firstname | safe}} {{session.surname | safe}}</h1>
-        <a href="/student-profile" class="btn btn-success btn-lg">Go to Your Profile</a>
-        <a href="/requests" class="btn btn-warning btn-lg">Make Requests</a>
+        <a href="/student-profile/{{session.id}}" class="btn btn-success btn-lg">Go to Your Profile</a>
+        <a href="/make-requests" class="btn btn-warning btn-lg">Make Requests</a>
         <a href="/upload-receipt" class="btn btn-danger btn-lg">Upload Rent Receipt</a>
     {% elif session.logged_in and session.usertype == 'supervisor' %}
       <h1>Welcome {{session.firstname | safe}} {{session.surname | safe}}</h1>

@@ -4,7 +4,7 @@
   <h1>{{dorm.dormname}}</h1>
   <hr>
   {% if dorm.picture %}
-  <img src="/static/uploads/{{dorm.picture}}" alt="{{dorm.dormname}}" width="500">
+  <img src="/static/uploads/img/dorm/{{dorm.picture}}" alt="{{dorm.dormname}}" width="500" style="display: block;margin-left: auto;margin-right: auto;width: 50%;">
   {% endif %}
   </br></br>
   <div>
@@ -19,4 +19,5 @@
     {% for room in rooms %}
       <li class="list-group-item"><a href="/room/{{room.id}}">{{room.roomname}}</a></li>
     {% endfor %}
+  </br></br></br></br></br></br>
 {% endblock %}

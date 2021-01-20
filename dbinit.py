@@ -88,6 +88,5 @@ def initialize(url):
 
 
 if __name__ == "__main__":
-    url = 'postgres://postgres:admin@localhost:5432/dorms'
-    # url = os.getenv("DATABASE_URL")
+    url = os.getenv("DATABASE_URL")
     initialize(url)

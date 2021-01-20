@@ -4,6 +4,8 @@
   <h1>File Complaint</h1>
   {% from "includes/_formhelpers.html" import render_field %}
   <form method="POST" action="">
+    {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
     <div class="form-group">
       {{render_field(form.complaint, class_="form-control")}}
     </div>

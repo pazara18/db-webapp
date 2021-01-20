@@ -7,6 +7,10 @@
     Email: {{supervisor.email | safe}} </br>
     Phone Number: {{supervisor.phonenum | safe}}
   </div>
+  </br>
+  {% if session.usertype == 'supervisor' %}
+  <a href="/edit-supervisor-profile/{{supervisor.id}}">Click here to edit your contact information</a>
+  {% endif %}
   <h2>Building information</h2>
     <li class="list-group-item"><a href="/dorm/{{dorm.id | safe}}">{{dorm.dormname | safe}}</a></li>
 {% endblock %}

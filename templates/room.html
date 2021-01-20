@@ -5,7 +5,7 @@
   <hr>
   <div>
     {% if room.picture %}
-      <img src="/static/uploads/{{room.picture}}" alt="{{room.roomname}}" width="500">
+      <img src="/static/uploads/img/room/{{room.picture}}" alt="{{room.roomname}}" width="500" style="display: block;margin-left: auto;margin-right: auto;width: 50%;">
     {% endif %}
     </br></br>
     <p>{{room.roomdescription | safe}}</p> </br></br>
@@ -20,5 +20,6 @@
     {% else %}
       <p>Please log in to see current occupants</p>
     {% endif %}
+    </br></br></br></br></br></br>
   </div>
 {% endblock %}
