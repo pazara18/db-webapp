@@ -1013,7 +1013,7 @@ def edit_supervisor_profile(supervisor_id):
 
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor()
-            cur.execute("SELECT phonenum FROM supervisor WHERE phonenum = %s", [phonenum])
+            cur.execute("SELECT phonenum FROM supervisor WHERE phonenum = %s", [phone])
             phonenum_unique = cur.fetchone()
             cur.close()
             if phonenum_unique:
@@ -1214,7 +1214,7 @@ def edit_student_profile(student_id):
     if request.method == 'POST' and form.validate():
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor()
-            cur.execute("SELECT phonenum FROM student WHERE phonenum = %s", [phonenum])
+            cur.execute("SELECT phonenum FROM student WHERE phonenum = %s", [phone])
             phonenum_unique = cur.fetchone()
             cur.close()
             if phonenum_unique:
