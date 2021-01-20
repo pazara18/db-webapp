@@ -15,8 +15,9 @@
         <a href="/upload-receipt" class="btn btn-danger btn-lg">Upload Rent Receipt</a>
     {% elif session.logged_in and session.usertype == 'supervisor' %}
       <h1>Welcome {{session.firstname | safe}} {{session.surname | safe}}</h1>
+        <a href="/supervisor-profile/{{session.id}}" class="btn btn-primary btn-lg">Go to Your Profile</a>
         <a href="/search-students" class="btn btn-danger btn-lg">Search Students</a>
-        <a href="/assign-students" class="btn btn-warning btn-lg">Assign Students</a>
+        <a href="/reply-complaints" class="btn btn-warning btn-lg">Respond to Requests</a>
         <a href="/edit-dorm" class="btn btn-success btn-lg">Edit Dorm</a>
     {% else %}
       <h1>Welcome</h1>

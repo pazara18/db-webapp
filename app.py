@@ -17,10 +17,10 @@ ENV = 'PROD'
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
-MYDIR = os.path.dirname(__file__)
 UPLOAD_PATH = "static/uploads/"
+MYDIR = os.path.dirname(__file__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_PATH
-DIR = MYDIR + "/" + UPLOAD_PATH 
+DIR = MYDIR + "/" + UPLOAD_PATH
 DORM_FOLDER = DIR + 'img/dorm/'
 ROOM_FOLDER = DIR + 'img/room/'
 RECEIPT_FOLDER = DIR + 'docs/'
@@ -248,12 +248,22 @@ def register_student():
 
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor()
-            cur.execute("SELECT phonenum FROM student WHERE phonenum = %s", [phonenum])
+            cur.execute("SELECT phonenum FROM student WHERE email = %s", [email])
             phonenum_unique = cur.fetchone()
-            if phonenum_unique:
+            if email_unique:
                 flash('This phone is already registered', 'danger')
                 return redirect(url_for('register_student'))
             cur.close()
+
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor()
+            cur.execute("SELECT phonenum FROM student WHERE phonenum = %s", [phonenum])
+            phonenum_unique = cur.fetchone()
+            cur.close()
+            if phonenum_unique:
+                flash('This phone is already registered', 'danger')
+                return redirect(url_for('register_student'))
+
 
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor()
@@ -289,10 +299,11 @@ def register_supervisor():
             cur = connection.cursor()
             cur.execute("SELECT email FROM student WHERE email = %s", [email])
             email_unique = cur.fetchone()
+            cur.close()
             if email_unique:
                 flash('This email is already registered', 'danger')
                 return redirect(url_for('register_supervisor'))
-            cur.close()
+
 
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor()
@@ -627,7 +638,6 @@ def process_requests():
     return render_template('process-requests.html', requests=requests)
 
 
-# todo
 # works
 @app.route('/request/<string:request_id>', methods=['GET', 'POST'])
 @is_logged_in
@@ -1000,6 +1010,15 @@ def edit_supervisor_profile(supervisor_id):
     form = EditProfileForm()
     phone = form.phonenum.data
     if request.method == 'POST' and form.validate():
+
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor()
+            cur.execute("SELECT phonenum FROM supervisor WHERE phonenum = %s", [phonenum])
+            phonenum_unique = cur.fetchone()
+            cur.close()
+            if phonenum_unique:
+                flash('This phone is already registered', 'danger')
+                return redirect(url_for('register_student'))
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
             cur.execute("UPDATE supervisor SET phonenum = %s WHERE supervisor.id = %s", [phone, supervisor_id])
@@ -1193,6 +1212,14 @@ def edit_student_profile(student_id):
     form = EditProfileForm()
     phone = form.phonenum.data
     if request.method == 'POST' and form.validate():
+        with dbapi2.connect(DATABASE_URI) as connection:
+            cur = connection.cursor()
+            cur.execute("SELECT phonenum FROM student WHERE phonenum = %s", [phonenum])
+            phonenum_unique = cur.fetchone()
+            cur.close()
+            if phonenum_unique:
+                flash('This phone is already registered', 'danger')
+                return redirect(url_for('register_student'))
         with dbapi2.connect(DATABASE_URI) as connection:
             cur = connection.cursor(cursor_factory=dbapi2extras.RealDictCursor)
             cur.execute("UPDATE student SET phonenum = %s WHERE student.id = %s", [phone, student_id])
